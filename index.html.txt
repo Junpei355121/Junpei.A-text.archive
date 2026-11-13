@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>塾講師 教材アーカイブポータル</title>
+  <style>
+    :root { --primary: #2c3e50; --accent: #3498db; --bg: #f8f9fa; }
+    body { font-family: sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: var(--bg); color: #333; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+    h1 { font-size: 1.4em; color: var(--primary); margin: 0; }
+    .admin-btn { background: #7f8c8d; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+    .admin-btn.active { background: #e74c3c; }
+    
+    /* フィルター部分 */
+    .filter-box { background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: center; }
+    .filter-group label { display: block; font-size: 0.8em; font-weight: bold; color: #666; margin-bottom: 4px; }
+    select, input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; box-sizing: border-box; }
+    
+    /* 管理者パネル */
+    #adminPanel { display: none; background: #fff3f3; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    #adminPanel h3 { margin-top: 0; color: #c0392b; font-size: 1.1em; }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .form-row input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .add-btn { background: #27ae60; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    
+    /* リスト部分 */
+    .card { background: #fff; padding: 15px 20px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .card.unpublished { background: #f1f2f6; opacity: 0.7; border-left: 4px solid #7f8c8d; }
+    .card.published { border-left: 4px solid #27ae60; }
+    .meta { font-size: 0.8em; color: #e67e22; font-weight: bold; margin-bottom: 4px; }
+    .title { font-size: 1.1em; font-weight: bold; color: var(--primary); }
+    .links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .links a { padding: 5px 10px; background: var(--accent); color: #fff; border-radius: 4px; text-decoration: none; font-size: 0.85em; font-weight: bold; }
+    .links a.pdf { background: #e74c3c; }
+    .links a.word { background: #2980b9; }
+    .links a.excel { background: #27ae60; }
+    .links a.ppt { background: #d35400; }
+    .links a.video { background: #8e44ad; }
+    .links a.disabled { background: #bdc3c7; pointer-events: none; }
+    .admin-controls { display: none; gap: 5px; align-items: center; margin-left: 10px; }
+    .admin-mode .admin-controls { display: flex; }
+    .toggle-pub { background: #f39c12; color: #fff; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
+    .del-btn { background: #c0392b; color: #fff; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>塾講師 授業資料アーカイブ</h1>
+    <button class="admin-btn" id="adminToggleBtn" onclick="toggleAdminMode()">管理者ログイン</button>
+  </header>
+
+  <!-- 管理者用パネル（パスワード認証後に出現） -->
+  <div id="adminPanel">
+    <h3>⚙️ 管理者メニュー：新規教材・資料の追加</h3>
+    <div class="form-row">
+      <input type="text" id="inputYear" placeholder="開講年度 (例: 2026)" value="2026">
+      <input type="text" id="inputSeason" placeholder="開講時期 (例: 通常授業 / 夏期講習)">
+      <input type="text" id="inputCourse" placeholder="講座名 (例: 高3 ハイレベル物理)">
+    </div>
+    <div class="form-row">
+      <input type="text" id="inputTitle" placeholder="タイトル (例: 第1回 力学・運動方程式)">
+      <input type="text" id="inputPdf" placeholder="PDFのリンクURL">
+      <input type="text" id="inputWord" placeholder="WordのリンクURL">
+    </div>
+    <div class="form-row">
+      <input type="text" id="inputExcel" placeholder="ExcelのリンクURL">
+      <input type="text" id="inputPpt" placeholder="PowerPointのリンクURL">
+      <input type="text" id="inputVideo" placeholder="動画のリンクURL">
+    </div>
+    <button class="add-btn" onclick="addNewItem()">+ 講座・資料を登録する</button>
+  </div>
+
+  <!-- 絞り込みフィルター -->
+  <div class="filter-box">
+    <div class="filter-group">
+      <label>開講年度で絞り込み</label>
+      <select id="filterYear" onchange="render()"><option value="">すべて表示</option></select>
+    </div>
+    <div class="filter-group">
+      <label>開講時期で絞り込み</label>
+      <select id="filterSeason" onchange="render()"><option value="">すべて表示</option></select>
+    </div>
+    <div class="filter-group">
+      <label>講座名で絞り込み</label>
+      <select id="filterCourse" onchange="render()"><option value="">すべて表示</option></select>
+    </div>
+  </div>
+
+  <!-- 資料リスト表示エリア -->
+  <div id="listArea"></div>
+
+  <script>
+    // 初期サンプルデータ（必要に応じて編集・削除可能）
+    const defaultItems = [
+      { id: "1", year: "2026", season: "通常授業", course: "高3 ハイレベル物理", title: "第1回 力学・運動方程式", pdf: "#", word: "", excel: "", ppt: "", video: "#", published: true },
+      { id: "2", year: "2026", season: "夏期講習", course: "高3 ハイレベル物理", title: "夏期特別演習：電磁気分野", pdf: "#", word: "#", excel: "", ppt: "#", video: "", published: true }
+    ];
+
+    let items = JSON.parse(localStorage.getItem("teacher_archive_items")) || defaultItems;
+    let isAdmin = false;
+    const ADMIN_PASS = "teacher2026"; // 共通パスワード（お好みで変更可能）
+
+    function toggleAdminMode() {
+      if (!isAdmin) {
+        const pass = prompt("管理者パスワードを入力してください：");
+        if (pass === ADMIN_PASS) {
+          isAdmin = true;
+          document.body.classList.add("admin-mode");
+          document.getElementById("adminPanel").style.display = "block";
+          document.getElementById("adminToggleBtn").textContent = "管理者ログアウト";
+          document.getElementById("adminToggleBtn").classList.add("active");
+          render();
+        } else if (pass !== null) {
+          alert("パスワードが違います。");
+        }
+      } else {
+        isAdmin = false;
+        document.body.classList.remove("admin-mode");
+        document.getElementById("adminPanel").style.display = "none";
+        document.getElementById("adminToggleBtn").textContent = "管理者ログイン";
+        document.getElementById("adminToggleBtn").classList.remove("active");
+        render();
+      }
+    }
+
+    function updateDropdowns() {
+      const years = [...new Set(items.map(i => i.year))].sort();
+      const seasons = [...new Set(items.map(i => i.season))].sort();
+      const courses = [...new Set(items.map(i => i.course))].sort();
+
+      updateSelectOptions("filterYear", years);
+      updateSelectOptions("filterSeason", seasons);
+      updateSelectOptions("filterCourse", courses);
+    }
+
+    function updateSelectOptions(elementId, values) {
+      const select = document.getElementById(elementId);
+      const currentVal = select.value;
+      let html = '<option value="">すべて表示</option>';
+      values.forEach(v => {
+        html += `<option value="${v}" ${v === currentVal ? 'selected' : ''}>${v}</option>`;
+      });
+      select.innerHTML = html;
+    }
+
+    function render() {
+      updateDropdowns();
+      const y = document.getElementById("filterYear").value;
+      const s = document.getElementById("filterSeason").value;
+      const c = document.getElementById("filterCourse").value;
+
+      const filtered = items.filter(item => {
+        // 管理者でない場合は非公開のものを表示しない
+        if (!isAdmin && !item.published) return false;
+        return (!y || item.year === y) &&
+               (!s || item.season === s) &&
+               (!c || item.course === c);
+      });
+
+      const area = document.getElementById("listArea");
+      if (filtered.length === 0) {
+        area.innerHTML = "<p style='text-align:center; color:#777; padding:20px;'>該当する資料はありません。</p>";
+        return;
+      }
+
+      area.innerHTML = filtered.map(item => `
+        <div class="card ${item.published ? 'published' : 'unpublished'}">
+          <div>
+            <div class="meta">${item.year}年度 / ${item.season} / ${item.course} ${!item.published ? '【非公開中】' : ''}</div>
+            <div class="title">${item.title}</div>
+          </div>
+          <div style="display:flex; align-items:center;">
+            <div class="links">
+              <a href="${item.pdf || '#'}" class="pdf ${!item.pdf ? 'disabled' : ''}" target="_blank">PDF</a>
+              <a href="${item.word || '#'}" class="word ${!item.word ? 'disabled' : ''}" target="_blank">Word</a>
+              <a href="${item.excel || '#'}" class="excel ${!item.excel ? 'disabled' : ''}" target="_blank">Excel</a>
+              <a href="${item.ppt || '#'}" class="ppt ${!item.ppt ? 'disabled' : ''}" target="_blank">PPT</a>
+              <a href="${item.video || '#'}" class="video ${!item.video ? 'disabled' : ''}" target="_blank">動画</a>
+            </div>
+            <div class="admin-controls">
+              <button class="toggle-pub" onclick="togglePublish('${item.id}')">${item.published ? '非公開にする' : '公開する'}</button>
+              <button class="del-btn" onclick="deleteItem('${item.id}')">削除</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function addNewItem() {
+      const year = document.getElementById("inputYear").value.trim();
+      const season = document.getElementById("inputSeason").value.trim();
+      const course = document.getElementById("inputCourse").value.trim();
+      const title = document.getElementById("inputTitle").value.trim();
+
+      if (!year || !season || !course || !title) {
+        alert("「年度」「時期」「講座名」「タイトル」は必須入力です。");
+        return;
+      }
+
+      const newItem = {
+        id: Date.now().toString(),
+        year: year,
+        season: season,
+        course: course,
+        title: title,
+        pdf: document.getElementById("inputPdf").value.trim(),
+        word: document.getElementById("inputWord").value.trim(),
+        excel: document.getElementById("inputExcel").value.trim(),
+        ppt: document.getElementById("inputPpt").value.trim(),
+        video: document.getElementById("inputVideo").value.trim(),
+        published: true
+      };
+
+      items.push(newItem);
+      saveAndRefresh();
+      
+      // 入力欄クリア
+      document.getElementById("inputTitle").value = "";
+      document.getElementById("inputPdf").value = "";
+      document.getElementById("inputWord").value = "";
+      document.getElementById("inputExcel").value = "";
+      document.getElementById("inputPpt").value = "";
+      document.getElementById("inputVideo").value = "";
+      alert("新しい資料を追加しました！");
+    }
+
+    function togglePublish(id) {
+      const target = items.find(i => i.id === id);
+      if (target) {
+        target.published = !target.published;
+        saveAndRefresh();
+      }
+    }
+
+    function deleteItem(id) {
+      if (confirm("この資料データを削除してもよろしいですか？")) {
+        items = items.filter(i => i.id !== id);
+        saveAndRefresh();
+      }
+    }
+
+    function saveAndRefresh() {
+      localStorage.setItem("teacher_archive_items", JSON.stringify(items));
+      render();
+    }
+
+    // 初期読み込み
+    render();
+  </script>
+
+</body>
+</html>
