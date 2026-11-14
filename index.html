@@ -21,30 +21,33 @@
     /* 管理者パネル */
     #adminPanel { display: none; background: #fff3f3; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
     #adminPanel h3 { margin-top: 0; color: #c0392b; font-size: 1.1em; }
-    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 3px; }
+    .form-group label { font-size: 0.75em; font-weight: bold; color: #c0392b; }
     .add-btn { background: #27ae60; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     
+    /* 動的リンク入力行 */
+    .link-input-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .link-input-row input { flex: 1; }
+    .remove-link-btn { background: #e74c3c; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+
     /* 講座カード・コマ別リスト */
     .card { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+    .card-header { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
     .meta { font-size: 0.8em; color: #e67e22; font-weight: bold; margin-bottom: 4px; }
     .course-title { font-size: 1.2em; font-weight: bold; color: var(--primary); }
+    .course-desc { font-size: 0.9em; color: #555; margin-top: 6px; white-space: pre-wrap; background: #fdfdfd; padding: 8px; border-left: 3px solid #3498db; }
     
     /* 各コマのスタイル */
-    .lesson-item { background: #fafbfc; border: 1px solid #e1e4e8; padding: 12px 15px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .lesson-item { background: #fafbfc; border: 1px solid #e1e4e8; padding: 15px; border-radius: 6px; margin-bottom: 12px; }
     .lesson-item.unpublished { opacity: 0.6; background: #f1f2f6; }
-    .lesson-info { flex: 1; min-width: 200px; }
-    .lesson-title { font-weight: bold; color: #2c3e50; font-size: 1em; }
+    .lesson-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .lesson-title { font-weight: bold; color: #2c3e50; font-size: 1.05em; }
+    .lesson-desc { font-size: 0.85em; color: #666; margin-bottom: 10px; white-space: pre-wrap; }
     
     .links { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .links a { padding: 4px 8px; border-radius: 3px; text-decoration: none; font-size: 0.8em; font-weight: bold; color: #fff; }
-    .links a.pdf { background: #e74c3c; }
-    .links a.word { background: #2980b9; }
-    .links a.excel { background: #27ae60; }
-    .links a.ppt { background: #d35400; }
-    .links a.video { background: #8e44ad; }
-    .links a.other { background: #7f8c8d; }
-    .links a.disabled { background: #bdc3c7; pointer-events: none; display: none; }
+    .links a { padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 0.8em; font-weight: bold; color: #fff; background: #3498db; }
+    .links a:hover { background: #2980b9; }
     
     .admin-controls { display: none; gap: 5px; align-items: center; }
     .admin-mode .admin-controls { display: flex; }
@@ -65,30 +68,366 @@
   <div id="adminPanel">
     <h3>⚙️ 管理者メニュー：講座およびコマ別資料の登録・編集</h3>
     <input type="hidden" id="editIndex" value="">
+    
     <div class="form-row">
-      <input type="text" id="inputYear" placeholder="開講年度 (例: 2026)" value="2026">
-      <input type="text" id="inputSeason" placeholder="開講時期 (例: 通常授業 / 夏期講習)">
-      <input type="text" id="inputCourse" placeholder="講座名 (例: 高3 ハイレベル物理)">
+      <div class="form-group"><label>開講年度</label><input type="text" id="inputYear" placeholder="2026" value="2026"></div>
+      <div class="form-group"><label>開講時期</label><input type="text" id="inputSeason" placeholder="通常授業 / 夏期講習"></div>
+      <div class="form-group"><label>講座名</label><input type="text" id="inputCourse" placeholder="高3 ハイレベル物理"></div>
     </div>
-    <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
-    <p style="font-size:0.85em; font-weight:bold; color:#c0392b; margin:5px 0;">【登録するコマの情報】</p>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>講座の説明文（任意）</label>
+      <textarea id="inputCourseDesc" rows="2" placeholder="この講座の概要や目標など"></textarea>
+    </div>
+
+    <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+    
     <div class="form-row">
-      <input type="text" id="inputLessonNo" placeholder="回数 (例: 第1回 / 第15回)">
-      <input type="text" id="inputLessonTitle" placeholder="授業テーマ (例: 力学・運動方程式)">
-      <select id="inputPublished" style="padding:8px; border:1px solid #ccc; border-radius:4px;">
-        <option value="true">公開状態</option>
-        <option value="false">非公開状態</option>
-      </select>
+      <div class="form-group"><label>回数</label><input type="text" id="inputLessonNo" placeholder="第1回"></div>
+      <div class="form-group"><label>授業テーマ</label><input type="text" id="inputLessonTitle" placeholder="力学・運動方程式"></div>
+      <div class="form-group">
+        <label>公開ステータス</label>
+        <select id="inputPublished" style="padding:8px; border:1px solid #ccc; border-radius:4px; width:100%;">
+          <option value="true">公開する</option>
+          <option value="false">非公開にする</option>
+        </select>
+      </div>
     </div>
-    <p style="font-size:0.8em; color:#666; margin:5px 0;">各種ファイル・動画のリンクURL（複数登録可能：Googleドライブ等の共有リンクやYouTubeURLを貼り付け）</p>
-    <div class="form-row">
-      <input type="text" id="inputPdf1" placeholder="PDF リンク1">
-      <input type="text" id="inputPdf2" placeholder="PDF リンク2 (追加用)">
-      <input type="text" id="inputWord" placeholder="Word リンク">
+    
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>このコマの説明文・宿題など（任意）</label>
+      <textarea id="inputLessonDesc" rows="2" placeholder="授業のポイントや配布資料の補足など"></textarea>
     </div>
-    <div class="form-row">
-      <input type="text" id="inputExcel" placeholder="Excel リンク">
-      <input type="text" id="inputPpt" placeholder="PowerPoint リンク">
-      <input type="text" id="inputVideo" placeholder="動画 リンク">
+
+    <!-- 自由追加式リンク・ファイル欄 -->
+    <div style="background:#fff; padding:12px; border-radius:6px; border:1px solid #ddd; margin-bottom:15px;">
+      <label style="font-size:0.85em; font-weight:bold; color:#c0392b; display:block; margin-bottom:8px;">📎 資料・ファイル・URL（いくつでも自由に追加可能）</label>
+      <div id="dynamicLinksContainer"></div>
+      <button type="button" onclick="addLinkInputRow('', '')" style="background:#2980b9; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.8em; margin-top:5px;">+ リンク・ファイル欄を追加</button>
     </div>
-    <div style="margin-top:10px; display:flex; gap:1
+
+    <div style="margin-top:15px; display:flex; gap:10px;">
+      <button class="add-btn" id="saveBtn" onclick="saveItem()">+ コマ資料を登録する</button>
+      <button class="add-btn" id="cancelEditBtn" style="background:#7f8c8d; display:none;" onclick="resetForm()">編集をキャンセル</button>
+    </div>
+  </div>
+
+  <!-- 絞り込みフィルター -->
+  <div class="filter-box">
+    <div class="filter-group">
+      <label>開講年度で絞り込み</label>
+      <select id="filterYear" onchange="render()"><option value="">すべて表示</option></select>
+    </div>
+    <div class="filter-group">
+      <label>開講時期で絞り込み</label>
+      <select id="filterSeason" onchange="render()"><option value="">すべて表示</option></select>
+    </div>
+    <div class="filter-group">
+      <label>講座名で絞り込み</label>
+      <select id="filterCourse" onchange="render()"><option value="">すべて表示</option></select>
+    </div>
+  </div>
+
+  <!-- 資料リスト表示エリア -->
+  <div id="listArea"></div>
+
+  <script>
+    const defaultData = [
+      {
+        year: "2026",
+        season: "通常授業",
+        course: "高3 ハイレベル物理",
+        courseDesc: "難関大受験に向けた物理の基礎から応用までの徹底演習。",
+        lessons: [
+          { 
+            id: "101", 
+            no: "第1回", 
+            title: "力学・運動方程式", 
+            desc: "微分を用いた運動方程式の立て方を確認しました。",
+            links: [
+              { name: "講義ノートPDF", url: "#" },
+              { name: "解説動画（YouTube）", url: "#" }
+            ], 
+            published: true 
+          }
+        ]
+      }
+    ];
+
+    let courses = JSON.parse(localStorage.getItem("teacher_archive_courses_v4")) || defaultData;
+    let isAdmin = false;
+    const ADMIN_PASS = "teacher2026";
+
+    function toggleAdminMode() {
+      if (!isAdmin) {
+        const pass = prompt("管理者パスワードを入力してください：");
+        if (pass === ADMIN_PASS) {
+          isAdmin = true;
+          document.body.classList.add("admin-mode");
+          document.getElementById("adminPanel").style.display = "block";
+          document.getElementById("adminToggleBtn").textContent = "管理者ログアウト";
+          document.getElementById("adminToggleBtn").classList.add("active");
+          render();
+        } else if (pass !== null) {
+          alert("パスワードが違います。");
+        }
+      } else {
+        isAdmin = false;
+        document.body.classList.remove("admin-mode");
+        document.getElementById("adminPanel").style.display = "none";
+        document.getElementById("adminToggleBtn").textContent = "管理者ログイン";
+        document.getElementById("adminToggleBtn").classList.remove("active");
+        resetForm();
+        render();
+      }
+    }
+
+    // 自由追加式リンクの行を追加する関数
+    function addLinkInputRow(nameVal = "", urlVal = "") {
+      const container = document.getElementById("dynamicLinksContainer");
+      const row = document.createElement("div");
+      row.className = "link-input-row";
+      row.innerHTML = `
+        <input type="text" placeholder="資料名 (例: 演習問題PDF)" value="${nameVal}" class="link-name-input" style="flex:1;">
+        <input type="text" placeholder="URL (https://... または Googleドライブ共有リンク)" value="${urlVal}" class="link-url-input" style="flex:2;">
+        <button type="button" class="remove-link-btn" onclick="this.parentElement.remove()">削除</button>
+      `;
+      container.appendChild(row);
+    }
+
+    function updateDropdowns() {
+      const years = [...new Set(courses.map(c => c.year))].sort();
+      const seasons = [...new Set(courses.map(c => c.season))].sort();
+      const courseNames = [...new Set(courses.map(c => c.course))].sort();
+
+      updateSelectOptions("filterYear", years);
+      updateSelectOptions("filterSeason", seasons);
+      updateSelectOptions("filterCourse", courseNames);
+    }
+
+    function updateSelectOptions(elementId, values) {
+      const select = document.getElementById(elementId);
+      const currentVal = select.value;
+      let html = '<option value="">すべて表示</option>';
+      values.forEach(v => {
+        html += `<option value="${v}" ${v === currentVal ? 'selected' : ''}>${v}</option>`;
+      });
+      select.innerHTML = html;
+    }
+
+    function render() {
+      updateDropdowns();
+      const y = document.getElementById("filterYear").value;
+      const s = document.getElementById("filterSeason").value;
+      const c = document.getElementById("filterCourse").value;
+
+      const area = document.getElementById("listArea");
+      let htmlOutput = "";
+
+      courses.forEach((courseGroup, cIndex) => {
+        if (y && courseGroup.year !== y) return;
+        if (s && courseGroup.season !== s) return;
+        if (c && courseGroup.course !== c) return;
+
+        const visibleLessons = courseGroup.lessons.filter(l => isAdmin || l.published);
+        if (!isAdmin && visibleLessons.length === 0) return;
+
+        htmlOutput += `
+          <div class="card">
+            <div class="card-header">
+              <div class="meta">${courseGroup.year}年度 / ${courseGroup.season}</div>
+              <div class="course-title">${courseGroup.course}</div>
+              ${courseGroup.courseDesc ? `<div class="course-desc">${courseGroup.courseDesc}</div>` : ''}
+            </div>
+            <div>
+        `;
+
+        courseGroup.lessons.forEach((lesson) => {
+          if (!isAdmin && !lesson.published) return;
+
+          let linksHtml = "";
+          if (lesson.links && lesson.links.length > 0) {
+            lesson.links.forEach(l => {
+              if (l.url) {
+                linksHtml += `<a href="${l.url}" target="_blank">📄 ${l.name || '資料'}</a>`;
+              }
+            });
+          }
+
+          htmlOutput += `
+            <div class="lesson-item ${lesson.published ? '' : 'unpublished'}">
+              <div class="lesson-top">
+                <div class="lesson-info">
+                  <span style="font-weight:bold; color:#e67e22; margin-right:8px;">${lesson.no}</span>
+                  <span class="lesson-title">${lesson.title}</span>
+                  ${!lesson.published ? '<span style="color:#e74c3c; font-size:0.8em; margin-left:8px;">【非公開中】</span>' : ''}
+                </div>
+                <div class="admin-controls">
+                  <button class="btn-sm btn-pub" onclick="togglePublish('${cIndex}', '${lesson.id}')">${lesson.published ? '非公開' : '公開'}</button>
+                  <button class="btn-sm btn-edit" onclick="editLesson('${cIndex}', '${lesson.id}')">編集</button>
+                  <button class="btn-sm btn-del" onclick="deleteLesson('${cIndex}', '${lesson.id}')">削除</button>
+                </div>
+              </div>
+              ${lesson.desc ? `<div class="lesson-desc">${lesson.desc}</div>` : ''}
+              <div class="links" style="margin-top:8px;">
+                ${linksHtml || '<span style="color:#999; font-size:0.85em;">登録された資料はありません</span>'}
+              </div>
+            </div>
+          `;
+        });
+
+        htmlOutput += `
+            </div>
+          </div>
+        `;
+      });
+
+      area.innerHTML = htmlOutput || "<p style='text-align:center; color:#777; padding:20px;'>該当する講座・資料はありません。</p>";
+    }
+
+    function saveItem() {
+      const year = document.getElementById("inputYear").value.trim();
+      const season = document.getElementById("inputSeason").value.trim();
+      const courseName = document.getElementById("inputCourse").value.trim();
+      const courseDesc = document.getElementById("inputCourseDesc").value.trim();
+      const lessonNo = document.getElementById("inputLessonNo").value.trim();
+      const lessonTitle = document.getElementById("inputLessonTitle").value.trim();
+      const lessonDesc = document.getElementById("inputLessonDesc").value.trim();
+      const published = document.getElementById("inputPublished").value === "true";
+      const editIndex = document.getElementById("editIndex").value;
+
+      if (!year || !season || !courseName || !lessonNo || !lessonTitle) {
+        alert("「年度」「時期」「講座名」「回数」「テーマ」は必須入力です。");
+        return;
+      }
+
+      // 動的リンクの収集
+      const linkRows = document.querySelectorAll(".link-input-row");
+      let linksData = [];
+      linkRows.forEach(row => {
+        const name = row.querySelector(".link-name-input").value.trim();
+        const url = row.querySelector(".link-url-input").value.trim();
+        if (url) {
+          linksData.push({ name: name || "資料", url: url });
+        }
+      });
+
+      const lessonData = {
+        id: editIndex !== "" ? getEditingLessonId() : Date.now().toString(),
+        no: lessonNo,
+        title: lessonTitle,
+        desc: lessonDesc,
+        links: linksData,
+        published: published
+      };
+
+      let targetGroup = courses.find(c => c.year === year && c.season === season && c.course === courseName);
+
+      if (editIndex !== "") {
+        removeCurrentEditingLesson();
+      }
+
+      if (targetGroup) {
+        targetGroup.courseDesc = courseDesc; // 説明文を更新
+        targetGroup.lessons.push(lessonData);
+        targetGroup.lessons.sort((a, b) => a.no.localeCompare(b.no, 'ja', { numeric: true }));
+      } else {
+        courses.push({
+          year: year,
+          season: season,
+          course: courseName,
+          courseDesc: courseDesc,
+          lessons: [lessonData]
+        });
+      }
+
+      saveAndRefresh();
+      resetForm();
+      alert("資料を保存しました！");
+    }
+
+    let currentEditingId = null;
+    function getEditingLessonId() { return currentEditingId; }
+
+    function removeCurrentEditingLesson() {
+      courses.forEach(c => {
+        c.lessons = c.lessons.filter(l => l.id !== currentEditingId);
+      });
+      courses = courses.filter(c => c.lessons.length > 0);
+    }
+
+    function editLesson(cIndex, lessonId) {
+      const courseGroup = courses[cIndex];
+      const lesson = courseGroup.lessons.find(l => l.id === lessonId);
+      if (!lesson) return;
+
+      currentEditingId = lessonId;
+      document.getElementById("editIndex").value = "editing";
+      document.getElementById("inputYear").value = courseGroup.year;
+      document.getElementById("inputSeason").value = courseGroup.season;
+      document.getElementById("inputCourse").value = courseGroup.course;
+      document.getElementById("inputCourseDesc").value = courseGroup.courseDesc || "";
+      document.getElementById("inputLessonNo").value = lesson.no;
+      document.getElementById("inputLessonTitle").value = lesson.title;
+      document.getElementById("inputLessonDesc").value = lesson.desc || "";
+      document.getElementById("inputPublished").value = lesson.published.toString();
+
+      // リンク欄の復元
+      const container = document.getElementById("dynamicLinksContainer");
+      container.innerHTML = "";
+      if (lesson.links && lesson.links.length > 0) {
+        lesson.links.forEach(l => {
+          addLinkInputRow(l.name, l.url);
+        });
+      } else {
+        addLinkInputRow("", "");
+      }
+
+      document.getElementById("saveBtn").textContent = "変更を保存する";
+      document.getElementById("cancelEditBtn").style.display = "inline-block";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+      currentEditingId = null;
+      document.getElementById("editIndex").value = "";
+      document.getElementById("inputLessonNo").value = "";
+      document.getElementById("inputLessonTitle").value = "";
+      document.getElementById("inputLessonDesc").value = "";
+      document.getElementById("inputCourseDesc").value = "";
+      
+      const container = document.getElementById("dynamicLinksContainer");
+      container.innerHTML = "";
+      addLinkInputRow("", ""); // 空の入力欄を1つ用意
+
+      document.getElementById("saveBtn").textContent = "+ コマ資料を登録する";
+      document.getElementById("cancelEditBtn").style.display = "none";
+    }
+
+    function togglePublish(cIndex, lessonId) {
+      const lesson = courses[cIndex].lessons.find(l => l.id === lessonId);
+      if (lesson) {
+        lesson.published = !lesson.published;
+        saveAndRefresh();
+      }
+    }
+
+    function deleteLesson(cIndex, lessonId) {
+      if (confirm("このコマの資料データを削除してもよろしいですか？")) {
+        courses[cIndex].lessons = courses[cIndex].lessons.filter(l => l.id !== lessonId);
+        courses = courses.filter(c => c.lessons.length > 0);
+        saveAndRefresh();
+      }
+    }
+
+    function saveAndRefresh() {
+      localStorage.setItem("teacher_archive_courses_v4", JSON.stringify(courses));
+      render();
+    }
+
+    // 初期化時に関係リンク入力欄を1つ用意して描画
+    addLinkInputRow("", "");
+    render();
+  </script>
+
+</body>
+</html>
